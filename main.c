@@ -10,9 +10,6 @@
 UBYTE running = 1;
 joypads_t joypads;
 
-Character detective;
-CharacterSmoke smoke;
-
 UBYTE updated;
 
 //returns value of hiwater
@@ -117,6 +114,90 @@ void setup_smoke(CharacterSmoke *smoke)
     smoke->smoke_frame_delay = 0;
     smoke->smoke_start_delay = 0;
 }
+
+void animate_detective(Character *detective)
+{
+    if (detective->body_animate == 1 && detective->body_frame_delay == 0)
+    {
+        // Animate the body when detective is moving.
+        updated = 1;
+        detective->body_frame_delay = FRAME_DELAY;
+        detective->body_frame_index++;
+
+        if (detective->direction == FACE_LEFT || detective->direction == FACE_RIGHT)
+        {
+            if (detective->body_frame_index > DETECTIVE_BODY_WALK_FRAME_END)
+            {
+                detective->body_frame_index = DETECTIVE_BODY_WALK_FRAME_START;
+            }
+        }
+        else if (detective->direction == FACE_UP)
+        {
+            if (detective->body_frame_index > DETECTIVE_BODY_UP_FRAME_END)
+            {
+                detective->body_frame_index = DETECTIVE_BODY_UP_FRAME_START;
+            }
+        }
+        else if (detective->direction == FACE_DOWN)
+        {
+            if (detective->body_frame_index > DETECTIVE_BODY_DOWN_FRAME_END)
+            {
+                detective->body_frame_index = DETECTIVE_BODY_DOWN_FRAME_START;
+            }
+        }
+
+        detective->body_frame_delay = detective->body_frame_index % 2 ? FRAME_DELAY * 2 : FRAME_DELAY;
+    }
+}
+
+void animate_smoke(Character *detective, CharacterSmoke *smoke)
+{
+    //SMOKE ANIMATION BELOW
+    if (smoke->smoke_start_delay == 0)
+    {
+
+        if (smoke->smoke_frame_delay == 0 || smoke->smoke_frame_index == 0)
+        {
+
+            // Animate the smoke when detective is moving.
+            updated = 1;
+
+            smoke->smoke_frame_delay = smoke->body_animate ? SMOKE_DELAY : SMOKE_IDLE_DELAY;
+
+            if (smoke->smoke_frame_index == 0)
+            {
+                smoke->x = detective->x;
+                smoke->y = detective->y;
+                smoke->facing_right = detective->direction == FACE_RIGHT; //returns a 0 or 1
+                smoke->body_animate = detective->body_animate;
+                smoke->direction = detective->direction;
+                smoke->smoke_frame_index = smoke->body_animate ? DETECTIVE_SMOKE_WALK_FRAME_START : DETECTIVE_SMOKE_STAND_FRAME_START;
+                if (smoke->direction == FACE_UP)
+                {
+                    smoke->direction = FACE_RIGHT;
+                }
+                else if (smoke->direction == FACE_DOWN && !smoke->body_animate)
+                {
+                    smoke->direction = FACE_LEFT;
+                }
+            }
+
+            // if (smoke->smoke_start_delay == 0)
+            // {}
+            smoke->smoke_frame_index++;
+
+            //IF smoke->body.animate = 1, then load DETECTIVE_SMOKE_WALK_FRAME_END. Now ====> smoke->smoke_frame_index > DETECTIVE_SMOKE_WALK_FRAME_END
+            if (smoke->smoke_frame_index > (smoke->body_animate ? DETECTIVE_SMOKE_WALK_FRAME_END : DETECTIVE_SMOKE_STAND_FRAME_END))
+            // Reached the last frame. Reset to FRAME_START.
+            {
+                smoke->smoke_frame_index = 0;
+
+                smoke->smoke_start_delay = (detective->body_animate ? SMOKE_WALK_START_DELAY : SMOKE_IDLE_START_DELAY);
+            }
+        }
+    }
+}
+
 void main(void)
 {
     DISPLAY_ON;
@@ -147,82 +228,9 @@ void main(void)
 
         joypad_ex(&joypads);
 
-        if (detective.body_animate == 1 && detective.body_frame_delay == 0)
-        {
-            // Animate the body when detective is moving.
-            updated = 1;
-            detective.body_frame_delay = FRAME_DELAY;
-            detective.body_frame_index++;
+        animate_detective(&detective);
+        animate_smoke(&detective, &smoke);
 
-            if (detective.direction == FACE_LEFT || detective.direction == FACE_RIGHT)
-            {
-                if (detective.body_frame_index > DETECTIVE_BODY_WALK_FRAME_END)
-                {
-                    detective.body_frame_index = DETECTIVE_BODY_WALK_FRAME_START;
-                }
-            }
-            else if (detective.direction == FACE_UP)
-            {
-                if (detective.body_frame_index > DETECTIVE_BODY_UP_FRAME_END)
-                {
-                    detective.body_frame_index = DETECTIVE_BODY_UP_FRAME_START;
-                }
-            }
-            else if (detective.direction == FACE_DOWN)
-            {
-                if (detective.body_frame_index > DETECTIVE_BODY_DOWN_FRAME_END)
-                {
-                    detective.body_frame_index = DETECTIVE_BODY_DOWN_FRAME_START;
-                }
-            }
-
-            detective.body_frame_delay = detective.body_frame_index % 2 ? FRAME_DELAY * 2 : FRAME_DELAY;
-        }
-
-        //SMOKE ANIMATION BELOW
-        if (smoke.smoke_start_delay == 0)
-        {
-
-            if (smoke.smoke_frame_delay == 0 || smoke.smoke_frame_index == 0)
-            {
-
-                // Animate the smoke when detective is moving.
-                updated = 1;
-
-                smoke.smoke_frame_delay = smoke.body_animate ? SMOKE_DELAY : SMOKE_IDLE_DELAY;
-
-                if (smoke.smoke_frame_index == 0)
-                {
-                    smoke.x = detective.x;
-                    smoke.y = detective.y;
-                    smoke.facing_right = detective.direction == FACE_RIGHT; //returns a 0 or 1
-                    smoke.body_animate = detective.body_animate;
-                    smoke.direction = detective.direction;
-                    smoke.smoke_frame_index = smoke.body_animate ? DETECTIVE_SMOKE_WALK_FRAME_START : DETECTIVE_SMOKE_STAND_FRAME_START;
-                    if (smoke.direction == FACE_UP)
-                    {
-                        smoke.direction = FACE_RIGHT;
-                    }
-                    else if (smoke.direction == FACE_DOWN && !smoke.body_animate)
-                    {
-                        smoke.direction = FACE_LEFT;
-                    }
-                }
-
-                // if (smoke.smoke_start_delay == 0)
-                // {}
-                smoke.smoke_frame_index++;
-
-                //IF smoke.body.animate = 1, then load DETECTIVE_SMOKE_WALK_FRAME_END. Now ====> smoke.smoke_frame_index > DETECTIVE_SMOKE_WALK_FRAME_END
-                if (smoke.smoke_frame_index > (smoke.body_animate ? DETECTIVE_SMOKE_WALK_FRAME_END : DETECTIVE_SMOKE_STAND_FRAME_END))
-                // Reached the last frame. Reset to FRAME_START.
-                {
-                    smoke.smoke_frame_index = 0;
-
-                    smoke.smoke_start_delay = (detective.body_animate ? SMOKE_WALK_START_DELAY : SMOKE_IDLE_START_DELAY);
-                }
-            }
-        }
         if (joypads.joy0 & J_LEFT)
         {
 
