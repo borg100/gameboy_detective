@@ -28,12 +28,9 @@ UINT8 load_detective_data(Character *detective, UINT8 hiwater)
     return hiwater;
 }
 //returns value of hiwater
-UINT8 load_smoke_data(CharacterSmoke *smoke, UINT8 hiwater)
+UINT8 load_smoke_data(UINT8 hiwater)
 {
-
-    //smoke index loads in the OAM + the tile number of Detective + cig_shine tiles
-    smoke->smoke_tile_index = hiwater;
-    set_sprite_data(smoke->smoke_tile_index, (sizeof(smoke_data) >> 4), smoke_data);
+    set_sprite_data(hiwater, (sizeof(smoke_data) >> 4), smoke_data);
     hiwater += (sizeof(smoke_data) >> 4);
 
     return hiwater;
@@ -66,18 +63,17 @@ UINT8 update_detective(Character *detective, UINT8 x, UINT8 y, UINT8 hiwater)
     return hiwater;
 }
 
-UINT8 update_smoke(CharacterSmoke *smoke, UINT8 x, UINT8 y, UINT8 hiwater)
+UINT8 update_smoke(CharacterSmoke *smoke, UINT8 smoke_tile_index, UINT8 x, UINT8 y, UINT8 hiwater)
 {
-
     if (smoke->direction != FACE_RIGHT)
     {
-        hiwater += move_metasprite(smoke_metasprites[smoke->smoke_frame_index], smoke->smoke_tile_index, hiwater, x + TILE_SIZE, y - TILE_SIZE);
+        hiwater += move_metasprite(smoke_metasprites[smoke->smoke_frame_index], smoke_tile_index, hiwater, x + TILE_SIZE, y - TILE_SIZE);
     }
     //else if = EITHER THIS OR THIS (no others allowed)
     //else = Anything other than the if is okay
     else
     {
-        hiwater += move_metasprite_vflip(smoke_metasprites[smoke->smoke_frame_index], smoke->smoke_tile_index, hiwater, x - TILE_SIZE, y - TILE_SIZE);
+        hiwater += move_metasprite_vflip(smoke_metasprites[smoke->smoke_frame_index], smoke_tile_index, hiwater, x - TILE_SIZE, y - TILE_SIZE);
     }
     return hiwater;
 }
@@ -99,20 +95,7 @@ void setup_detective(Character *detective)
 
 void setup_smoke(CharacterSmoke *smoke)
 {
-
-    // Initial position
-    smoke->x = 70;
-    smoke->y = 50;
-
-    smoke->facing_right = 0; // Set to LEFT
-
-    // detective body
-    smoke->body_animate = 0; // Set to OFF
-    smoke->body_frame_index = DETECTIVE_BODY_STAND_FRAME;
-    smoke->body_frame_delay = 0;
-    smoke->smoke_frame_index = DETECTIVE_SMOKE_STAND_FRAME_START;
-    smoke->smoke_frame_delay = 0;
-    smoke->smoke_start_delay = 0;
+    smoke->state = STOPPED;
 }
 
 void animate_detective(Character *detective)
@@ -156,59 +139,42 @@ void animate_detective(Character *detective)
 
 void animate_smoke(Character *detective, CharacterSmoke *smoke)
 {
-    //SMOKE ANIMATION BELOW
-    if (smoke->smoke_start_delay == 0)
+    if (smoke->state == RESTART)
     {
+        // Start smoke
+        smoke->state = PLAYING;
 
-        if (smoke->smoke_frame_delay == 0 || smoke->smoke_frame_index == 0)
+        smoke->x = detective->x;
+        smoke->y = detective->y;
+        smoke->body_animate = detective->body_animate;
+        smoke->smoke_frame_index = smoke->body_animate ? DETECTIVE_SMOKE_WALK_FRAME_START : DETECTIVE_SMOKE_STAND_FRAME_START;
+        smoke->smoke_frame_delay = 0;
+
+        smoke->direction = detective->direction;
+        if (smoke->direction == FACE_UP)
         {
-
-            // Animate the smoke when detective is moving.
-            updated = 1;
-
-            smoke->smoke_frame_delay = smoke->body_animate ? SMOKE_DELAY : SMOKE_IDLE_DELAY;
-
-            if (smoke->smoke_frame_index == 0)
-            {
-                smoke->x = detective->x;
-                smoke->y = detective->y;
-                smoke->facing_right = detective->direction == FACE_RIGHT; //returns a 0 or 1
-                smoke->body_animate = detective->body_animate;
-                smoke->direction = detective->direction;
-                smoke->smoke_frame_index = smoke->body_animate ? DETECTIVE_SMOKE_WALK_FRAME_START : DETECTIVE_SMOKE_STAND_FRAME_START;
-                if (smoke->direction == FACE_UP)
-                {
-                    smoke->direction = FACE_RIGHT;
-                }
-                else if (smoke->direction == FACE_DOWN && !smoke->body_animate)
-                {
-                    smoke->direction = FACE_LEFT;
-                }
-            }
-
-            // if (smoke->smoke_start_delay == 0)
-            // {}
-            smoke->smoke_frame_index++;
-
-            //IF smoke->body.animate = 1, then load DETECTIVE_SMOKE_WALK_FRAME_END. Now ====> smoke->smoke_frame_index > DETECTIVE_SMOKE_WALK_FRAME_END
-            if (smoke->smoke_frame_index > (smoke->body_animate ? DETECTIVE_SMOKE_WALK_FRAME_END : DETECTIVE_SMOKE_STAND_FRAME_END))
-            // Reached the last frame. Reset to FRAME_START.
-            {
-                smoke->smoke_frame_index = 0;
-
-                smoke->smoke_start_delay = (detective->body_animate ? SMOKE_WALK_START_DELAY : SMOKE_IDLE_START_DELAY);
-            }
+            smoke->direction = FACE_RIGHT;
+        }
+        else if (smoke->direction == FACE_DOWN && !smoke->body_animate)
+        {
+            smoke->direction = FACE_LEFT;
         }
     }
 
-    if (smoke->body_frame_delay > 0)
-        smoke->body_frame_delay--;
+    if (smoke->state == PLAYING && smoke->smoke_frame_delay == 0)
+    {
+        updated = 1;
+        smoke->smoke_frame_delay = smoke->body_animate ? SMOKE_DELAY : SMOKE_IDLE_DELAY;
+        smoke->smoke_frame_index++;
+
+        if (smoke->smoke_frame_index > (smoke->body_animate ? DETECTIVE_SMOKE_WALK_FRAME_END : DETECTIVE_SMOKE_STAND_FRAME_END))
+        {
+            smoke->state = STOPPED;
+        }
+    }
 
     if (smoke->smoke_frame_delay > 0)
         smoke->smoke_frame_delay--;
-
-    if (smoke->smoke_start_delay > 0)
-        smoke->smoke_start_delay--;
 }
 
 void main(void)
@@ -222,17 +188,26 @@ void main(void)
     BGP_REG = 0x4E;
 
     Character detective;
-    CharacterSmoke smoke;
+    CharacterSmoke smoke_objects[SMOKE_OBJECT_COUNT];
+
+    UINT8 smoke_tile_index;
+    UINT8 smoke_start_delay = 0;
 
     UINT8 tile_hiwater = 0;
 
     // Load detective sprite data.
     tile_hiwater = load_detective_data(&detective, tile_hiwater); //copies value 0 then updates with return
-    tile_hiwater = load_smoke_data(&smoke, tile_hiwater);         //copies Detective tile count then updates with return
+
+    smoke_tile_index = tile_hiwater;
+    tile_hiwater = load_smoke_data(tile_hiwater); //copies Detective tile count then updates with return
 
     // Set initial detective values.
     setup_detective(&detective);
-    setup_smoke(&smoke);
+
+    for (UINT8 i = 0; i < SMOKE_OBJECT_COUNT; i++)
+    {
+        setup_smoke(&smoke_objects[i]);
+    }
 
     joypad_init(1, &joypads);
 
@@ -240,9 +215,6 @@ void main(void)
     {
 
         joypad_ex(&joypads);
-
-        animate_detective(&detective);
-        animate_smoke(&detective, &smoke);
 
         if (joypads.joy0 & J_LEFT)
         {
@@ -265,6 +237,7 @@ void main(void)
                 {
                     // started moving for the first time
                     detective.body_animate = 1;
+                    smoke_start_delay = SMOKE_WALK_START_DELAY;
                 }
             }
         }
@@ -287,6 +260,7 @@ void main(void)
                 {
                     // started moving for the first time
                     detective.body_animate = 1;
+                    smoke_start_delay = SMOKE_WALK_START_DELAY;
                 }
             }
         }
@@ -310,6 +284,7 @@ void main(void)
                 {
                     // started moving for the first time
                     detective.body_animate = 1;
+                    smoke_start_delay = SMOKE_WALK_START_DELAY;
                 }
             }
         }
@@ -333,6 +308,7 @@ void main(void)
                 {
                     // started moving for the first time
                     detective.body_animate = 1;
+                    smoke_start_delay = SMOKE_WALK_START_DELAY;
                 }
             }
         }
@@ -340,7 +316,7 @@ void main(void)
         if (!(joypads.joy0 & (J_LEFT | J_RIGHT | J_UP | J_DOWN)))
         {
             // Not moving
-            if (detective.body_animate == 1 || detective.body_frame_index != DETECTIVE_BODY_STAND_FRAME)
+            if (detective.body_animate == 1)
             {
                 // If body is animated OR body frame is not STAND_FRAME.
 
@@ -362,33 +338,46 @@ void main(void)
                 {
                     detective.body_frame_index = DETECTIVE_BODY_DOWN_STAND_FRAME;
                 }
+
+                smoke_start_delay = SMOKE_IDLE_START_DELAY;
             }
-            // SMOKE Not moving
-            if (smoke.body_animate == 1 || smoke.body_frame_index != DETECTIVE_BODY_STAND_FRAME)
+        }
+
+        animate_detective(&detective);
+
+        for (UINT8 i = 0; i < SMOKE_OBJECT_COUNT; i++)
+        {
+            if (smoke_start_delay == 0 && smoke_objects[i].state == STOPPED)
             {
-                // If body is animated OR body frame is not STAND_FRAME.
-
-                // Make sure update_detective() is called.
-                updated = 1;
-
-                // Stop body animation
-
-                smoke.body_frame_index = DETECTIVE_BODY_STAND_FRAME;
-                // smoke.smoke_frame_index = DETECTIVE_SMOKE_STAND_FRAME_START;
+                smoke_objects[i].state = RESTART;
+                smoke_start_delay = (detective.body_animate ? SMOKE_WALK_START_DELAY : SMOKE_IDLE_START_DELAY);
             }
+            animate_smoke(&detective, &smoke_objects[i]);
         }
 
         if (updated == 1)
         {
-            UINT8 sprite_hiwater = 0;
             // If there's been any changes, update the metasprite.
             updated = 0;
-            sprite_hiwater = update_smoke(&smoke, smoke.x, smoke.y, sprite_hiwater);
+
+            UINT8 sprite_hiwater = 0;
+
+            for (UINT8 i = 0; i < SMOKE_OBJECT_COUNT; i++)
+            {
+                if (smoke_objects[i].state == PLAYING)
+                {
+                    sprite_hiwater = update_smoke(&smoke_objects[i], smoke_tile_index, smoke_objects[i].x, smoke_objects[i].y, sprite_hiwater);
+                }
+            }
+
             sprite_hiwater = update_detective(&detective, detective.x, detective.y, sprite_hiwater);
 
             for (UBYTE i = sprite_hiwater; i < 40; i++)
                 shadow_OAM[i].y = 0;
         }
+
+        if (smoke_start_delay > 0)
+            smoke_start_delay--;
 
         wait_vbl_done();
     }

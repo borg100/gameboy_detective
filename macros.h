@@ -1,11 +1,18 @@
 #pragma once
 
+#define STOPPED 0
+#define RESTART 1
+#define PLAYING 2
+
 // Sprite delays (60 = 1 second)
 #define FRAME_DELAY 7
 #define SMOKE_DELAY 12            //walking smoke animation frame delay
 #define SMOKE_IDLE_DELAY 11       //standing smoke animation frame delay
-#define SMOKE_IDLE_START_DELAY 90 //pause time between smoke puffs
-#define SMOKE_WALK_START_DELAY 20
+
+#define SMOKE_IDLE_START_DELAY 150 //pause time between smoke puffs
+#define SMOKE_WALK_START_DELAY 10
+
+#define SMOKE_OBJECT_COUNT 4
 
 // DETECTIVE body stand
 #define DETECTIVE_BODY_STAND_FRAME 0
