@@ -27,6 +27,7 @@ UINT8 load_detective_data(Character *detective, UINT8 hiwater)
 
     return hiwater;
 }
+
 //returns value of hiwater
 UINT8 load_smoke_data(UINT8 hiwater)
 {
@@ -35,6 +36,7 @@ UINT8 load_smoke_data(UINT8 hiwater)
 
     return hiwater;
 }
+
 //blocks detective from walking off of the screen
 UBYTE can_detective_move(UINT8 x, UINT8 y)
 {
@@ -179,7 +181,6 @@ void animate_smoke(Character *detective, CharacterSmoke *smoke)
 
 void main(void)
 {
-    DISPLAY_ON;
     SHOW_BKG;
     SHOW_SPRITES;
     SPRITES_8x16;
@@ -187,32 +188,51 @@ void main(void)
     OBP1_REG = 0xE1;
     BGP_REG = 0x4E;
 
+    joypad_init(1, &joypads);
+
+    updated = 1;
+
+    /******************************/
+    // Declare local variables
+    /******************************/
+
     Character detective;
     CharacterSmoke smoke_objects[SMOKE_OBJECT_COUNT];
+
+    UINT8 tile_hiwater;
+    UINT8 sprite_hiwater;
 
     UINT8 smoke_tile_index;
     UINT8 smoke_start_delay = 0;
 
-    UINT8 tile_hiwater = 0;
+    /******************************/
+    // Load tiles
+    /******************************/
 
-    // Load detective sprite data.
+    tile_hiwater = 0;
+
     tile_hiwater = load_detective_data(&detective, tile_hiwater); //copies value 0 then updates with return
 
     smoke_tile_index = tile_hiwater;
     tile_hiwater = load_smoke_data(tile_hiwater); //copies Detective tile count then updates with return
 
-    // Set initial detective values.
-    setup_detective(&detective);
+    /******************************/
+    // Setup structs
+    /******************************/
 
+    setup_detective(&detective);
     for (UINT8 i = 0; i < SMOKE_OBJECT_COUNT; i++)
     {
         setup_smoke(&smoke_objects[i]);
     }
-
-    joypad_init(1, &joypads);
+    
+    DISPLAY_ON;
 
     while (running)
     {
+        /******************************/
+        // Joypad
+        /******************************/
 
         joypad_ex(&joypads);
 
@@ -288,7 +308,6 @@ void main(void)
                 }
             }
         }
-
         else if (joypads.joy0 & J_DOWN)
         {
 
@@ -318,13 +337,12 @@ void main(void)
             // Not moving
             if (detective.body_animate == 1)
             {
-                // If body is animated OR body frame is not STAND_FRAME.
-
-                // Make sure update_detective() is called.
+                // If body is animated
+                
                 updated = 1;
 
                 // Stop body animation
-                detective.body_animate = 0; // Set body animation to OFF
+                detective.body_animate = 0;
 
                 if (detective.direction == FACE_LEFT || detective.direction == FACE_RIGHT)
                 {
@@ -343,6 +361,10 @@ void main(void)
             }
         }
 
+        /******************************/
+        // Animations
+        /******************************/
+
         animate_detective(&detective);
 
         for (UINT8 i = 0; i < SMOKE_OBJECT_COUNT; i++)
@@ -355,13 +377,21 @@ void main(void)
             animate_smoke(&detective, &smoke_objects[i]);
         }
 
+        if (smoke_start_delay > 0)
+            smoke_start_delay--;
+
+        /******************************/
+        // Drawing
+        /******************************/
+
         if (updated == 1)
         {
-            // If there's been any changes, update the metasprite.
+            // If there's been any changes, update the metasprites.
+
             updated = 0;
+            sprite_hiwater = 0;
 
-            UINT8 sprite_hiwater = 0;
-
+            // Smoke trail
             for (UINT8 i = 0; i < SMOKE_OBJECT_COUNT; i++)
             {
                 if (smoke_objects[i].state == PLAYING)
@@ -370,14 +400,13 @@ void main(void)
                 }
             }
 
+            // Detective
             sprite_hiwater = update_detective(&detective, detective.x, detective.y, sprite_hiwater);
 
-            for (UBYTE i = sprite_hiwater; i < 40; i++)
+            // Hide unused sprites
+            for (UINT8 i = sprite_hiwater; i < 40; i++)
                 shadow_OAM[i].y = 0;
         }
-
-        if (smoke_start_delay > 0)
-            smoke_start_delay--;
 
         wait_vbl_done();
     }
