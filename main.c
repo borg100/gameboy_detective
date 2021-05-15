@@ -148,6 +148,10 @@ void animate_detective(Character *detective)
 
         detective->body_frame_delay = detective->body_frame_index % 2 ? FRAME_DELAY * 2 : FRAME_DELAY;
     }
+
+    // The amount of delay between frame animation. Decrement animation delays
+    if (detective->body_frame_delay > 0)
+        detective->body_frame_delay--;
 }
 
 void animate_smoke(Character *detective, CharacterSmoke *smoke)
@@ -196,6 +200,15 @@ void animate_smoke(Character *detective, CharacterSmoke *smoke)
             }
         }
     }
+
+    if (smoke->body_frame_delay > 0)
+        smoke->body_frame_delay--;
+
+    if (smoke->smoke_frame_delay > 0)
+        smoke->smoke_frame_delay--;
+
+    if (smoke->smoke_start_delay > 0)
+        smoke->smoke_start_delay--;
 }
 
 void main(void)
@@ -376,18 +389,6 @@ void main(void)
             for (UBYTE i = sprite_hiwater; i < 40; i++)
                 shadow_OAM[i].y = 0;
         }
-        // The amount of delay between frame animation. Decrement animation delays
-        if (detective.body_frame_delay > 0)
-            detective.body_frame_delay--;
-
-        if (smoke.body_frame_delay > 0)
-            smoke.body_frame_delay--;
-
-        if (smoke.smoke_frame_delay > 0)
-            smoke.smoke_frame_delay--;
-
-        if (smoke.smoke_start_delay > 0)
-            smoke.smoke_start_delay--;
 
         wait_vbl_done();
     }
