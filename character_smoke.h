@@ -2,10 +2,7 @@
 // #define CHARACTER_H
 //pragma once is a stronger method to ifndef <-> endif
 #pragma once
-#include <stdio.h>
-#include <gb/font.h>
-#include <gb/console.h>
-#include <gb/drawing.h>
+#include <gb/gb.h>
 
 typedef struct CharacterSmoke
 {
@@ -17,8 +14,6 @@ typedef struct CharacterSmoke
     UBYTE facing_right;
     UINT8 sprite_index;
     UBYTE direction;
-
-    UINT8 cig_shine_tile_index;
 
     // Body Metasprite
     UBYTE body_animate;

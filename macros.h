@@ -7,19 +7,6 @@
 #define SMOKE_IDLE_START_DELAY 90 //pause time between smoke puffs
 #define SMOKE_WALK_START_DELAY 20
 
-//SPRITE INDEX IS NOT RELATED TO THE TILE INDEX. These are used to load the Sprite OBJ's into OAM in order
-//0 in the OAM
-
-//amount of sprites
-// #define DETECTIVE_BODY_SPRITE_COUNT 4
-#define SMOKE_SMOKE_SPRITE_INDEX 0                      //OAM
-#define SMOKE_TILE_COUNT (SMOKE_SMOKE_SPRITE_INDEX + 2) //assures ShadowOAM only effects the smoke tiles
-#define DETECTIVE_CIG_SHINE_SPRITE_INDEX 2              //OAM
-#define DETECTIVE_CIG_SPRITE 3
-// #define DETECTIVE_CIG_SHINE_TILE_COUNT (DETECTIVE_CIG_SHINE_SPRITE_INDEX + 2)
-
-#define DETECTIVE_BODY_SPRITE_INDEX 5 //OAM
-
 // DETECTIVE body stand
 #define DETECTIVE_BODY_STAND_FRAME 0
 

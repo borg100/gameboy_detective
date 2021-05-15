@@ -3,24 +3,16 @@
 //pragma once is a stronger method to ifndef <-> endif
 //it makes sure that the header file is only included once
 #pragma once
-#include <stdio.h>
-#include <gb/font.h>
-#include <gb/console.h>
-#include <gb/drawing.h>
+#include <gb/gb.h>
 
 typedef struct Character
 {
-    // When this is set to 1, the update_toad() function will be called.
-
     UINT8 x;
     UINT8 y;
 
     UBYTE direction;
 
-    UINT8 sprite_index;
-
     UINT8 cig_shine_tile_index;
-    UINT8 cig_shine_tile_count;
 
     // Body Metasprite
     UBYTE body_animate;

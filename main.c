@@ -1,8 +1,4 @@
-#include <stdio.h>
 #include <gb/gb.h>
-#include <gb/font.h>
-#include <gb/console.h>
-#include <gb/drawing.h>
 #include <gb/metasprites.h>
 #include "tiles/tile_detectivewalk.h"
 #include "tiles/cig_shine.h"
@@ -13,13 +9,11 @@
 
 UBYTE running = 1;
 joypads_t joypads;
+
 Character detective;
 CharacterSmoke smoke;
-UINT8 hiwater;
-UBYTE updated;
 
-// Blank tile. (h3's workaround to hide the smoke bc blank_tile wasnt working)
-const unsigned char blank_data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+UBYTE updated;
 
 //returns value of hiwater
 UINT8 load_detective_data(Character *detective, UINT8 hiwater)
@@ -135,9 +129,6 @@ void main(void)
 
     Character detective;
     CharacterSmoke smoke;
-
-    // Load blank sprite data.
-    set_sprite_data(0, 1, blank_data);
 
     UINT8 tile_hiwater = 0;
 
