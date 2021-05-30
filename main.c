@@ -164,13 +164,12 @@ void animate_smoke(Character *detective, CharacterSmoke *smoke)
     {
         // Start smoke
         smoke->state = PLAYING;
-        smoke_walk_FRAME_START = smoke->facing_LR ? DETECTIVE_SMOKE_WALK_LR_FRAME_START : DETECTIVE_SMOKE_WALK_UPDOWN_FRAME_START;
-        smoke_walk_FRAME_END = smoke->facing_LR ? DETECTIVE_SMOKE_WALK_LR_FRAME_END : DETECTIVE_SMOKE_WALK_UPDOWN_FRAME_END;
+        // smoke_walk_FRAME_START = smoke->facing_LR ? DETECTIVE_SMOKE_WALK_LR_FRAME_START : DETECTIVE_SMOKE_WALK_UPDOWN_FRAME_START;
+        // smoke_walk_FRAME_END = smoke->facing_LR ? DETECTIVE_SMOKE_WALK_LR_FRAME_END : DETECTIVE_SMOKE_WALK_UPDOWN_FRAME_END;
 
         smoke->x = detective->x;
         smoke->y = detective->y;
         smoke->body_animate = detective->body_animate;
-        smoke->smoke_frame_index = smoke->body_animate ? smoke->smoke_frame_start : DETECTIVE_SMOKE_STAND_FRAME_START;
         smoke->smoke_frame_delay = 0;
 
         smoke->direction = detective->direction;
@@ -204,6 +203,8 @@ void animate_smoke(Character *detective, CharacterSmoke *smoke)
             smoke->smoke_frame_start = DETECTIVE_SMOKE_STAND_FRAME_START;
             smoke->smoke_frame_end = DETECTIVE_SMOKE_STAND_FRAME_END;
         }
+
+        smoke->smoke_frame_index = smoke->smoke_frame_start;
     }
 
     if (smoke->state == PLAYING && smoke->smoke_frame_delay == 0)
@@ -212,7 +213,7 @@ void animate_smoke(Character *detective, CharacterSmoke *smoke)
         smoke->smoke_frame_delay = smoke->body_animate ? SMOKE_DELAY : SMOKE_IDLE_DELAY;
         smoke->smoke_frame_index++;
 
-        if (smoke->smoke_frame_index > (smoke->body_animate ? smoke->smoke_frame_end : DETECTIVE_SMOKE_STAND_FRAME_END))
+        if (smoke->smoke_frame_index > smoke->smoke_frame_end)
         {
             smoke->state = STOPPED;
         }
@@ -239,8 +240,8 @@ void main(void)
     // Declare local variables
     /******************************/
 
-    Character detective;
-    CharacterSmoke smoke_objects[SMOKE_OBJECT_COUNT];
+    // Character detective;
+    // CharacterSmoke smoke_objects[SMOKE_OBJECT_COUNT];
 
     UINT8 tile_hiwater;
     UINT8 sprite_hiwater;
